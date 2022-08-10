@@ -1,8 +1,40 @@
 # libtorch
 
 ---
+## 生成PT文件
+在生成HRNet的pt文件，按照原始代码对模型代码进行简化后，按照如下代码进行生成：
 
-## 载入PT模型
+```python
+model = model.cpu()
+model.eval()
+pt = torch.jit.trace(model, dummy_tensor)
+# pt = torch.jit.script(model, dummy_tensor)
+torch.jit.save(pt, f"model_every_from_p5000_epoch100.pt")
+```
+
+过程中会报：
+
+```shell
+After commentting out this line(/anaconda3/envs/hrnet_env/lib/python3.6/site-packages/torch/jit/init.py", line 2195: assert(isinstance(orig, torch.nn.Module)))，this happend:
+File "/anaconda3/envs/hrnet_env/lib/python3.6/site-packages/torch/jit/init.py", line 787, in make_module
+return _module_class(mod, _compilation_unit=_compilation_unit)
+File "/anaconda3/envs/hrnet_env/lib/python3.6/site-packages/torch/jit/init.py", line 2216, in init
+tmp_module.training = orig.training
+AttributeError: 'NoneType' object has no attribute 'training'
+```
+究其原因，是因为HRNet里面有这样的语句：
+
+![orginal_code](../../imgdata/libtorch/hrnet_code.png)
+---
+
+在进行libtorch进行序列化时，由于```None```不是pytorch中定义的layer，因此无法转换成功。由于```None```在这里是不起发挥任何作用，因此，可以使用```nn.Identity()```代替即可：
+
+![code_for_make_pt](../../imgdata/libtorch/hrnet_to_pt.png)
+
+[可参考该链接](https://github.com/microsoft/nni/issues/2922)
+
+---
+## load PT模型
 
 ```c++
 torch::jit::script::Module model = torch::jit::load(ptFilePath);  //pytorch model 
@@ -11,7 +43,6 @@ std::shared_ptr<torch::jit::script::Module> model_ptr = std::make_shared<torch::
 ```
 
 ---
-
 ## 创建Tensor
 
 ### 从C++基础类型创建
