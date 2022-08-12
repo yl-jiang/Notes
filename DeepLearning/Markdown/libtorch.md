@@ -183,4 +183,14 @@ std::cout << x.requires_grad() << std::endl;  // prints true
     std::cout << z.requires_grad() << std::endl; // prints `false`
 }
 ```
+## CPU与GPU之间的转换
 
+```c++
+torch::NoGradGuard no_grad;
+torch::Tensor tmp = torch::ones({2, 3});
+if (torch::cuda::is_available())
+{
+    auto device = torch::Device(torch::kCUDA, 0);
+}
+tmp = tmp.to(device);  // tmp = tmp.to(other_tensor.device());
+```
